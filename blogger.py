@@ -14,9 +14,9 @@ class BloggerFormatCommand(sublime_plugin.TextCommand):
 			self.view.replace(edit, gt, "&lt;")
 
 		codeTypes = ["java","coldfusion","c","c++","c/c++","python"]
-		
+
 		# Add a pre tag around code and output blocks
-		preTypes = codeTypes
+		preTypes = codeTypes[:] # Copy the array into a new variable
 		preTypes.append("output")
 		for preType in preTypes:
 			# searchString = '\n' + preType
@@ -27,7 +27,11 @@ class BloggerFormatCommand(sublime_plugin.TextCommand):
 				self.view.insert(edit, block.begin(),"<pre>\n")
 
 		# Add code style to code pre tags
-		
+		for codeType in codeTypes:
+			preTags = self.view.find_all(codeType + ':\n<pre>',sublime.IGNORECASE)
+			preTags.reverse()
+			for tag in preTags:
+				self.view.insert(edit,tag.end()-1," style=\"java\"")
 
 		# Add <br> to the end of each line
 		newLines = self.view.find_all('\n')
