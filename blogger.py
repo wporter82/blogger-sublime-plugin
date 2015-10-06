@@ -13,15 +13,21 @@ class BloggerFormatCommand(sublime_plugin.TextCommand):
 		for gt in greaterThan:
 			self.view.replace(edit, gt, "&lt;")
 
-		# Add a pre tag around code blocks
-		codeTypes = ["java","coldfusion","c","c++","c/c++"]
-		for codeType in codeTypes:
-			# searchString = '\n' + codeType
-			codeBlock = self.view.find_all('(?<=' + codeType + ':\n)((?!\n\n).|\n)+?(?=\n\n)',sublime.IGNORECASE)
+		codeTypes = ["java","coldfusion","c","c++","c/c++","python"]
+		
+		# Add a pre tag around code and output blocks
+		preTypes = codeTypes
+		preTypes.append("output")
+		for preType in preTypes:
+			# searchString = '\n' + preType
+			codeBlock = self.view.find_all('(?<=' + preType + ':\n)((?!\n\n).|\n)+?(?=\n\n)',sublime.IGNORECASE)
 			codeBlock.reverse()
 			for block in codeBlock:
 				self.view.insert(edit, block.end(),"\n</pre>\n")
 				self.view.insert(edit, block.begin(),"<pre>\n")
+
+		# Add code style to code pre tags
+		
 
 		# Add <br> to the end of each line
 		newLines = self.view.find_all('\n')
@@ -31,6 +37,18 @@ class BloggerFormatCommand(sublime_plugin.TextCommand):
 			# skip it since that text is <pre> formatted
 			newRegion = sublime.Region(line.begin()-4,line.begin())
 			leftOfNewLine = self.view.substr(newRegion)
-			print(leftOfNewLine)
-			if leftOfNewLine != "pre>":
+			# Check to see if the first char of the line is a tab and skip it
+			# Get the whole line as a new region
+			wholeLine = self.view.line(line)
+			# Get just the first char of the line
+			beginOfLineRegion = sublime.Region(wholeLine.begin(),wholeLine.begin()+1)
+			beginOfLine = self.view.substr(beginOfLineRegion)
+
+			if leftOfNewLine != "pre>" and beginOfLine != '\t':
 				self.view.replace(edit, line, "<br>\n")
+
+class BloggerPostEmailCommand(sublime_plugin.TextCommand):
+	def run(self, edit):
+		self.view.run_command('blogger_format')
+		# Send an email with the formatted post
+		self.view.insert(edit,self.view.size(),"\n\nEmail Sent. Blog Post Posted!")

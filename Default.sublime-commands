@@ -3,5 +3,10 @@
 		"id": "Blogger-format",
 		"command": "blogger_format",
 		"caption": "Blogger Format"
+	},
+	{
+		"id": "Blogger-post-email",
+		"command": "blogger_post_email",
+		"caption": "Blogger Post via Email"
 	}
 ]
