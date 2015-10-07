@@ -1,4 +1,7 @@
-import sublime, sublime_plugin
+import sublime, sublime_plugin, webbrowser
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(__file__), "oauth2client"))
+from client import OAuth2WebServerFlow
 
 class BloggerFormatCommand(sublime_plugin.TextCommand):
 	def run(self, edit):
@@ -60,3 +63,7 @@ class BloggerPostEmailCommand(sublime_plugin.TextCommand):
 		# Send an email with the formatted post
 		# Just append that we sent an email for now, until it is implemented.
 		self.view.insert(edit,self.view.size(),"\n\nEmail Sent. Blog Post Posted!")
+
+class BloggerAuthenticateCommand(sublime_plugin.TextCommand):
+	def run(self, edit):
+		webbrowser.open_new("http://google.com")
