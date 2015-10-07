@@ -13,14 +13,14 @@ class BloggerFormatCommand(sublime_plugin.TextCommand):
 		for gt in greaterThan:
 			self.view.replace(edit, gt, "&lt;")
 
-		codeTypes = ["java","coldfusion","c","c++","c/c++","python"]
+		codeTypes = ["java","js","coldfusion","cpp","c","csharp","html","css","python","vb","powershell","ruby","bash","shell","sql"]
 
 		# Add a pre tag around code and output blocks
 		preTypes = codeTypes[:] # Copy the array into a new variable
 		preTypes.append("output")
 		for preType in preTypes:
 			# searchString = '\n' + preType
-			codeBlock = self.view.find_all('(?<=' + preType + ':\n)((?!\n\n).|\n)+?(?=\n\n)',sublime.IGNORECASE)
+			codeBlock = self.view.find_all('(?<=' + preType + ':\n)((?!\n\n(?!\t)).|\n)+?(?=\n\n(?!\t))',sublime.IGNORECASE)
 			codeBlock.reverse()
 			for block in codeBlock:
 				self.view.insert(edit, block.end(),"\n</pre>\n")
@@ -31,28 +31,32 @@ class BloggerFormatCommand(sublime_plugin.TextCommand):
 			preTags = self.view.find_all(codeType + ':\n<pre>',sublime.IGNORECASE)
 			preTags.reverse()
 			for tag in preTags:
-				self.view.insert(edit,tag.end()-1," style=\"java\"")
+				self.view.insert(edit,tag.end()-1," class=\"brush: " + codeType + "\"")
 
-		# Add <br> to the end of each line
+		# Add <br> to the end of each line except for certain cases
 		newLines = self.view.find_all('\n')
 		newLines.reverse()
 		for line in newLines:
-			# Check if the beginning of the line has a <pre> or </pre> tag and
-			# skip it since that text is <pre> formatted
-			newRegion = sublime.Region(line.begin()-4,line.begin())
-			leftOfNewLine = self.view.substr(newRegion)
-			# Check to see if the first char of the line is a tab and skip it
 			# Get the whole line as a new region
 			wholeLine = self.view.line(line)
-			# Get just the first char of the line
-			beginOfLineRegion = sublime.Region(wholeLine.begin(),wholeLine.begin()+1)
-			beginOfLine = self.view.substr(beginOfLineRegion)
+			previousLine = self.view.line(line.begin()-1)
+			nextLine = self.view.line(line.end()+1)
 
-			if leftOfNewLine != "pre>" and beginOfLine != '\t':
+			# Check to see if the first char of the line is a tab and skip it
+			# Get just the first char of the line
+			beginOfLine = self.view.substr(sublime.Region(wholeLine.begin(),wholeLine.begin()+1))
+			beginOfPrevLine = self.view.substr(sublime.Region(previousLine.begin(),previousLine.begin()+1))
+			beginOfNextLine = self.view.substr(sublime.Region(nextLine.begin(),nextLine.begin()+1))
+
+			#Get the first 4 chars of the line to check for the <pre> tag
+			first4chars = self.view.substr(sublime.Region(wholeLine.begin(),wholeLine.begin()+4))
+
+			if beginOfLine != '\t' and first4chars != '<pre' and first4chars != '</pr' and beginOfPrevLine != '\t' and beginOfNextLine != '\t':
 				self.view.replace(edit, line, "<br>\n")
 
 class BloggerPostEmailCommand(sublime_plugin.TextCommand):
 	def run(self, edit):
 		self.view.run_command('blogger_format')
 		# Send an email with the formatted post
+		# Just append that we sent an email for now, until it is implemented.
 		self.view.insert(edit,self.view.size(),"\n\nEmail Sent. Blog Post Posted!")
