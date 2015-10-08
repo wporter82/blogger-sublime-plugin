@@ -1,7 +1,9 @@
 import sublime, sublime_plugin, webbrowser
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__), "oauth2client"))
+sys.path.append(os.path.dirname(__file__))
 from client import OAuth2WebServerFlow
+from oauth2client.file import Storage
 
 class BloggerFormatCommand(sublime_plugin.TextCommand):
 	def run(self, edit):
@@ -66,4 +68,20 @@ class BloggerPostEmailCommand(sublime_plugin.TextCommand):
 
 class BloggerAuthenticateCommand(sublime_plugin.TextCommand):
 	def run(self, edit):
-		webbrowser.open_new("http://google.com")
+		storage = Storage(os.path.join(os.path.dirname(__file__),"credentials_file"))
+		credentials = storage.get()
+		if credentials == None:
+			flow = OAuth2WebServerFlow(client_id='GOOGLE_CLIENT_ID',
+                           client_secret='GOOGLE_SECRET_KEY',
+                           scope='https://www.googleapis.com/auth/blogger',
+                           redirect_uri='http://127.0.0.1')
+			url = flow.step1_get_authorize_url()
+			webbrowser.open(url,new=2,autoraise=True)
+
+			def save_credentials(code):
+				credentials = flow.step2_exchange(code)
+				storage.put(credentials)
+			
+			sublime.active_window().show_input_panel("Code from url:", "", save_credentials, None, None)
+
+		print(credentials)
