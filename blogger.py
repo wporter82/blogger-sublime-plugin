@@ -2,8 +2,9 @@ import sublime, sublime_plugin, webbrowser
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__), "oauth2client"))
 sys.path.append(os.path.dirname(__file__))
-from client import OAuth2WebServerFlow
+from oauth2client import client
 from oauth2client.file import Storage
+
 
 class BloggerFormatCommand(sublime_plugin.TextCommand):
 	def run(self, edit):
@@ -67,21 +68,24 @@ class BloggerPostEmailCommand(sublime_plugin.TextCommand):
 		self.view.insert(edit,self.view.size(),"\n\nEmail Sent. Blog Post Posted!")
 
 class BloggerAuthenticateCommand(sublime_plugin.TextCommand):
+	# Load the client_secrets from a file and have Google show a page with the code to paste.
+	flow = client.flow_from_clientsecrets('client_secrets.json',
+						scope='https://www.googleapis.com/auth/blogger',
+						redirect_uri='urn:ietf:wg:oauth:2.0:oob')
+	# Use plaintext storage for now and move to a more secure method later
+	storage = Storage(os.path.join(os.path.dirname(__file__),"credentials_file"))
+
 	def run(self, edit):
-		storage = Storage(os.path.join(os.path.dirname(__file__),"credentials_file"))
-		credentials = storage.get()
+		credentials = self.storage.get()
 		if credentials == None:
-			flow = OAuth2WebServerFlow(client_id='GOOGLE_CLIENT_ID',
-                           client_secret='GOOGLE_SECRET_KEY',
-                           scope='https://www.googleapis.com/auth/blogger',
-                           redirect_uri='http://127.0.0.1')
-			url = flow.step1_get_authorize_url()
+			url = self.flow.step1_get_authorize_url()
 			webbrowser.open(url,new=2,autoraise=True)
 
-			def save_credentials(code):
-				credentials = flow.step2_exchange(code)
-				storage.put(credentials)
-			
-			sublime.active_window().show_input_panel("Code from url:", "", save_credentials, None, None)
-
-		print(credentials)
+			# input as async so don't try to do anything else after this call
+			sublime.active_window().show_input_panel("Paste code from Google here:", "", self.save_credentials, None, None)
+		else:
+			print(credentials)
+	
+	def save_credentials(self, code):
+		credentials = self.flow.step2_exchange(code)
+		self.storage.put(credentials)
