@@ -1,7 +1,7 @@
 import sublime, sublime_plugin, webbrowser
 import sys, os
-sys.path.append(os.path.join(os.path.dirname(__file__), "oauth2client"))
-sys.path.append(os.path.dirname(__file__))
+sys.path.append(os.path.join(os.path.dirname(__file__), "lib"))
+import httplib2
 from oauth2client import client
 from oauth2client.file import Storage
 
@@ -84,8 +84,14 @@ class BloggerAuthenticateCommand(sublime_plugin.TextCommand):
 			# input as async so don't try to do anything else after this call
 			sublime.active_window().show_input_panel("Paste code from Google here:", "", self.save_credentials, None, None)
 		else:
-			print(credentials)
+			self.use_credentials(credentials)
 	
 	def save_credentials(self, code):
 		credentials = self.flow.step2_exchange(code)
 		self.storage.put(credentials)
+		self.use_credentials(credentials)
+
+	def use_credentials(self, credentials):
+		http_auth = credentials.authorize(httplib2.Http())
+		# from apiclient.discovery import build
+		print(credentials)
