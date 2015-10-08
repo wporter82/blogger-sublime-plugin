@@ -2,6 +2,7 @@ import sublime, sublime_plugin, webbrowser
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__), "lib"))
 import httplib2
+# from googleapiclient.discovery import build
 from oauth2client import client
 from oauth2client.file import Storage
 
@@ -93,5 +94,7 @@ class BloggerAuthenticateCommand(sublime_plugin.TextCommand):
 
 	def use_credentials(self, credentials):
 		http_auth = credentials.authorize(httplib2.Http())
-		# from apiclient.discovery import build
-		print(credentials)
+		from googleapiclient.discovery import build
+		blogger_service = build('blogger','v3',http=http_auth)
+		blogs = blogger_service.blogs().getByUrl('http://dabb1e.blogspot.com').execute()
+		print(blogs)
