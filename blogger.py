@@ -61,23 +61,36 @@ class BloggerFormatCommand(sublime_plugin.TextCommand):
 			if beginOfLine != '\t' and first4chars != '<pre' and first4chars != '</pr' and beginOfPrevLine != '\t' and beginOfNextLine != '\t':
 				self.view.replace(edit, line, "<br>\n")
 
+
+
 class BloggerPostEmailCommand(sublime_plugin.TextCommand):
 	def run(self, edit):
 		self.view.run_command('blogger_format')
 		# Send an email with the formatted post
 		# Just append that we sent an email for now, until it is implemented.
-		self.view.insert(edit,self.view.size(),"\n\nEmail Sent. Blog Post Posted!")
+		self.view.insert(edit,self.view.size(),"\n\nEmail Sending not enabled yet.")
 
-class BloggerAuthenticateCommand(sublime_plugin.TextCommand):
-	# Load the client_secrets from a file and have Google show a page with the code to paste.
+
+
+class BloggerPostViaApiCommand(sublime_plugin.TextCommand):
+	# Load the client_secrets from a file and have Google show a page with the code to paste in Sublime
 	flow = client.flow_from_clientsecrets('client_secrets.json',
 						scope='https://www.googleapis.com/auth/blogger',
 						redirect_uri='urn:ietf:wg:oauth:2.0:oob')
-	# Use plaintext storage for now and move to a more secure method later
-	storage = Storage(os.path.join(os.path.dirname(__file__),"credentials_file"))
+	# Use plaintext storage for testing and move to a more secure method later
+	credential_storage = Storage(os.path.join(os.path.dirname(__file__),"credentials_file"))
+
+	def read_blog_url_file(self):
+		try:
+			blog_url_file = open(os.path.join(os.path.dirname(__file__),"blog_url.txt"),'r')
+			blog_url = blog_url_file.read()
+			blog_url_file.close()
+			return blog_url
+		except:
+			return None
 
 	def run(self, edit):
-		credentials = self.storage.get()
+		credentials = self.credential_storage.get()
 		if credentials == None:
 			url = self.flow.step1_get_authorize_url()
 			webbrowser.open(url,new=2,autoraise=True)
@@ -85,16 +98,56 @@ class BloggerAuthenticateCommand(sublime_plugin.TextCommand):
 			# input as async so don't try to do anything else after this call
 			sublime.active_window().show_input_panel("Paste code from Google here:", "", self.save_credentials, None, None)
 		else:
-			self.use_credentials(credentials)
+			blog_url = self.read_blog_url_file()
+			if blog_url == None:
+				self.get_blog_url()
+			else:
+				self.get_blog_info(blog_url)
 	
 	def save_credentials(self, code):
 		credentials = self.flow.step2_exchange(code)
-		self.storage.put(credentials)
-		self.use_credentials(credentials)
+		self.credential_storage.put(credentials)
+		blog_url = self.read_blog_url_file()
+		if blog_url == None:
+			self.get_blog_url()
+		else:
+			self.get_blog_info(blog_url)
 
-	def use_credentials(self, credentials):
+	def get_blog_url(self):
+		sublime.active_window().show_input_panel("Paste the blog URL here:", "http://", self.save_blog_url, None, None)
+
+	def save_blog_url(self, blog_url):
+		try:
+			blog_url_file = open(os.path.join(os.path.dirname(__file__),"blog_url.txt"),'w')
+			blog_url_file.write(blog_url)
+			blog_url_file.close()
+			self.get_blog_info(blog_url)
+		except:
+			print("Error saving to: " + os.path.join(os.path.dirname(__file__),"blog_url.txt"))
+			# This should not pass and should warn the user that the file can't be saved.
+			exit()
+
+	def get_blog_info(self, blog_url):
+		credentials = self.credential_storage.get()
 		http_auth = credentials.authorize(httplib2.Http())
 		from googleapiclient.discovery import build
 		blogger_service = build('blogger','v3',http=http_auth)
-		blogs = blogger_service.blogs().getByUrl('http://dabb1e.blogspot.com').execute()
-		print(blogs)
+		result = blogger_service.blogs().getByUrl(url=blog_url).execute()
+		blog_id = result['id']
+		self.post_blog_entry(blog_id, blogger_service)
+
+	def post_blog_entry(self, blog_id, blogger_service):
+		# Get the title from the first line
+		post_title_region = self.view.line(0)
+		post_title = self.view.substr(post_title_region)
+		# print(post_title)
+		
+		# Run the formatting algorithm and get the page contents
+		self.view.run_command('blogger_format')
+		content = self.view.substr(sublime.Region(post_title_region.end()+10, self.view.size()))
+		# print(content)
+
+		request = blogger_service.posts().insert(blogId=blog_id,body={"title":post_title,"content":content},isDraft=True)
+		result = request.execute()
+		sublime.status_message("Posted: (" + result['title'] + ") as a draft")
+		# print(result['url'])
