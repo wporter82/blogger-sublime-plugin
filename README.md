@@ -8,3 +8,6 @@ SyntaxHighlighter to make it more visible. A blogpost will be coming soon showin
 Dependecies:
 <a href="https://github.com/google/oauth2client">oauth2client</a>
 <a href="https://pypi.python.org/pypi/six">six</a> (just copy six.py into the oauth2client directory)
+google-api-python-client
+httplib2
+uritemplate
