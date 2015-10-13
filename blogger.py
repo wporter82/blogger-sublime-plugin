@@ -2,7 +2,6 @@ import sublime, sublime_plugin, webbrowser
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__), "lib"))
 import httplib2
-# from googleapiclient.discovery import build
 from oauth2client import client
 from oauth2client.file import Storage
 
@@ -79,15 +78,7 @@ class BloggerPostViaApiCommand(sublime_plugin.TextCommand):
 						redirect_uri='urn:ietf:wg:oauth:2.0:oob')
 	# Use plaintext storage for testing and move to a more secure method later
 	credential_storage = Storage(os.path.join(os.path.dirname(__file__),"credentials_file"))
-
-	def read_blog_url_file(self):
-		try:
-			blog_url_file = open(os.path.join(os.path.dirname(__file__),"blog_url.txt"),'r')
-			blog_url = blog_url_file.read()
-			blog_url_file.close()
-			return blog_url
-		except:
-			return None
+	settings_file = "Blogger.sublime-settings"
 
 	def run(self, edit):
 		credentials = self.credential_storage.get()
@@ -98,7 +89,7 @@ class BloggerPostViaApiCommand(sublime_plugin.TextCommand):
 			# input as async so don't try to do anything else after this call
 			sublime.active_window().show_input_panel("Paste code from Google here:", "", self.save_credentials, None, None)
 		else:
-			blog_url = self.read_blog_url_file()
+			blog_url = sublime.load_settings(self.settings_file).get("blog_url")
 			if blog_url == None:
 				self.get_blog_url()
 			else:
@@ -107,7 +98,7 @@ class BloggerPostViaApiCommand(sublime_plugin.TextCommand):
 	def save_credentials(self, code):
 		credentials = self.flow.step2_exchange(code)
 		self.credential_storage.put(credentials)
-		blog_url = self.read_blog_url_file()
+		blog_url = sublime.load_settings(self.settings_file).get("blog_url")
 		if blog_url == None:
 			self.get_blog_url()
 		else:
@@ -117,15 +108,10 @@ class BloggerPostViaApiCommand(sublime_plugin.TextCommand):
 		sublime.active_window().show_input_panel("Paste the blog URL here:", "http://", self.save_blog_url, None, None)
 
 	def save_blog_url(self, blog_url):
-		try:
-			blog_url_file = open(os.path.join(os.path.dirname(__file__),"blog_url.txt"),'w')
-			blog_url_file.write(blog_url)
-			blog_url_file.close()
-			self.get_blog_info(blog_url)
-		except:
-			print("Error saving to: " + os.path.join(os.path.dirname(__file__),"blog_url.txt"))
-			# This should not pass and should warn the user that the file can't be saved.
-			exit()
+		settings = sublime.load_settings(self.settings_file)
+		settings.set("blog_url",blog_url)
+		sublime.save_settings(self.settings_file)
+		self.get_blog_info(blog_url)
 
 	def get_blog_info(self, blog_url):
 		credentials = self.credential_storage.get()
@@ -140,14 +126,11 @@ class BloggerPostViaApiCommand(sublime_plugin.TextCommand):
 		# Get the title from the first line
 		post_title_region = self.view.line(0)
 		post_title = self.view.substr(post_title_region)
-		# print(post_title)
 		
 		# Run the formatting algorithm and get the page contents
 		self.view.run_command('blogger_format')
 		content = self.view.substr(sublime.Region(post_title_region.end()+10, self.view.size()))
-		# print(content)
 
 		request = blogger_service.posts().insert(blogId=blog_id,body={"title":post_title,"content":content},isDraft=True)
 		result = request.execute()
 		sublime.status_message("Posted: (" + result['title'] + ") as a draft")
-		# print(result['url'])
