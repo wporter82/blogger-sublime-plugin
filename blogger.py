@@ -74,9 +74,14 @@ class BloggerPostEmailCommand(sublime_plugin.TextCommand):
 
 class BloggerPostViaApiCommand(sublime_plugin.TextCommand):
 	# Load the client_secrets from a file and have Google show a page with the code to paste in Sublime
-	flow = client.flow_from_clientsecrets('client_secrets.json',
+	secrets_file = os.path.join(os.path.dirname(__file__),"client_secrets.json")
+	try:
+		flow = client.flow_from_clientsecrets(secrets_file,
 						scope='https://www.googleapis.com/auth/blogger',
 						redirect_uri='urn:ietf:wg:oauth:2.0:oob')
+	except:
+		sublime.error_message('API Secrets file not found: ' + secrets_file)
+		raise Exception('Blogger Plugin not loaded due to file not found: ' + secrets_file)
 	# Use plaintext storage for testing and move to a more secure method later
 	credential_storage = Storage(os.path.join(os.path.dirname(__file__),"credentials_file"))
 
