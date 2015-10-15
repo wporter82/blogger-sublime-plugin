@@ -8,10 +8,5 @@
 		"id": "Blogger-post",
 		"command": "blogger_post_via_api",
 		"caption": "Blogger Post"
-	},
-	{
-		"id": "Blogger-post-email",
-		"command": "blogger_post_email",
-		"caption": "Blogger Post via Email"
 	}
 ]
