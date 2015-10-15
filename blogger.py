@@ -17,7 +17,7 @@ class BloggerFormatCommand(sublime_plugin.TextCommand):
 		greaterThan = self.view.find_all('>')
 		greaterThan.reverse()
 		for gt in greaterThan:
-			self.view.replace(edit, gt, "&lt;")
+			self.view.replace(edit, gt, "&gt;")
 
 		codeTypes = ["java","js","coldfusion","cpp","c","csharp","html","css","python","vb","powershell","ruby","bash","shell","sql"]
 
