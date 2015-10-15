@@ -85,15 +85,6 @@ class BloggerPostViaApiCommand(sublime_plugin.TextCommand):
 	credential_storage = Storage(os.path.join(os.path.dirname(__file__),"credentials_file"))
 	settings_file = "Blogger.sublime-settings"
 
-	def read_blog_url_file(self):
-		try:
-			blog_url_file = open(os.path.join(os.path.dirname(__file__),"blog_url.txt"),'r')
-			blog_url = blog_url_file.read()
-			blog_url_file.close()
-			return blog_url
-		except:
-			return None
-
 	def run(self, edit):
 		credentials = self.credential_storage.get()
 		if credentials == None:
