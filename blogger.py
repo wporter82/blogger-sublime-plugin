@@ -1,11 +1,14 @@
 import sublime, sublime_plugin, webbrowser
 import sys, os
+# make sure we can include extra libraries
 sys.path.append(os.path.join(os.path.dirname(__file__), "lib"))
 import httplib2
 from oauth2client import client
 from oauth2client.file import Storage
 
-
+# *****************************************************************************************
+# FORMATTING
+# *****************************************************************************************
 class BloggerFormatCommand(sublime_plugin.TextCommand):
 	def run(self, edit):
 		# Replace < and > with &lt; and &gt;
@@ -61,7 +64,9 @@ class BloggerFormatCommand(sublime_plugin.TextCommand):
 				self.view.replace(edit, line, "<br>\n")
 
 
-
+# *****************************************************************************************
+# POST VIA EMAIL
+# *****************************************************************************************
 class BloggerPostEmailCommand(sublime_plugin.TextCommand):
 	def run(self, edit):
 		self.view.run_command('blogger_format')
@@ -70,7 +75,9 @@ class BloggerPostEmailCommand(sublime_plugin.TextCommand):
 		self.view.insert(edit,self.view.size(),"\n\nEmail Sending not enabled yet.")
 
 
-
+# *****************************************************************************************
+# POST VIA API
+# *****************************************************************************************
 class BloggerPostViaApiCommand(sublime_plugin.TextCommand):
 	# Load the client_secrets from a file and have Google show a page with the code to paste in Sublime
 	secrets_file = os.path.join(os.path.dirname(__file__),"client_secrets.json")
