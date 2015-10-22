@@ -5,6 +5,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "lib"))
 import httplib2
 from oauth2client import client
 from oauth2client.file import Storage
+import markdown
 
 # *****************************************************************************************
 # FORMATTING
@@ -42,6 +43,8 @@ class BloggerFormatCommand(sublime_plugin.TextCommand):
 			for tag in preTags:
 				self.view.insert(edit,tag.end()-1," class=\"brush: " + codeType + "\"")
 
+
+
 		# Add <br> to the end of each line except for certain cases
 		newLines = self.view.find_all('\n')
 		newLines.reverse()
@@ -63,6 +66,14 @@ class BloggerFormatCommand(sublime_plugin.TextCommand):
 			if beginOfLine != '\t' and first4chars != '<pre' and first4chars != '</pr' and beginOfPrevLine != '\t' and beginOfNextLine != '\t':
 				self.view.replace(edit, line, "<br>\n")
 
+# *****************************************************************************************
+# MARKDOWN
+# *****************************************************************************************
+class BloggerMarkdownCommand(sublime_plugin.TextCommand):
+	def run(self, edit):
+		# Convert markdown code into html
+		newHtml = markdown.markdown(self.view.substr(sublime.Region(0, self.view.size())))
+		self.view.replace(edit, sublime.Region(0, self.view.size()), newHtml)
 
 # *****************************************************************************************
 # POST VIA EMAIL

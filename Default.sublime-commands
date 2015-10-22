@@ -5,6 +5,11 @@
 		"caption": "Blogger Format"
 	},
 	{
+		"id": "Blogger-markdown",
+		"command": "blogger_markdown",
+		"caption": "Blogger Markdown"
+	},
+	{
 		"id": "Blogger-post",
 		"command": "blogger_post_via_api",
 		"caption": "Blogger Post"

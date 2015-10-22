@@ -12,6 +12,7 @@ Dependecies:
 <li>google-api-python-client</li>
 <li>httplib2</li>
 <li>uritemplate</li>
+<li>python-markdown ($ git clone git://github.com/waylan/Python-Markdown.git python-markdown)</li>
 </ul>
 <br>
 Formatting:<br>
