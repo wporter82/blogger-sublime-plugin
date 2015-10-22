@@ -8,7 +8,75 @@ from oauth2client.file import Storage
 import markdown
 
 # *****************************************************************************************
-# FORMATTING
+# Helper function to post to blogger
+# *****************************************************************************************
+def post(post_title, post_contents):
+	def get_blog_url():
+		sublime.active_window().show_input_panel("Paste the blog URL here:", "http://", save_blog_url, None, None)
+
+	def save_blog_url(blog_url):
+		settings = sublime.load_settings(settings_file)
+		settings.set("blog_url",blog_url)
+		sublime.save_settings(settings_file)
+		get_blog_info(blog_url)
+
+	def get_blog_info(blog_url):
+		credentials = credential_storage.get()
+		http_auth = credentials.authorize(httplib2.Http())
+		from googleapiclient.discovery import build
+		blogger_service = build('blogger','v3',http=http_auth)
+		result = blogger_service.blogs().getByUrl(url=blog_url).execute()
+		blog_id = result['id']
+		post_blog_entry(blog_id, blogger_service)
+
+	def post_blog_entry(blog_id, blogger_service):
+		request = blogger_service.posts().insert(blogId=blog_id,body={"title":post_title,"content":post_contents},isDraft=True)
+		result = request.execute()
+		sublime.status_message("Posted: (" + result['title'] + ") as a draft")
+		pass
+		
+	def save_credentials(code):
+		credentials = flow.step2_exchange(code)
+		credential_storage.put(credentials)
+		blog_url = sublime.load_settings(settings_file).get("blog_url")
+		if blog_url == None:
+			get_blog_url()
+		else:
+			get_blog_info(blog_url)
+
+	print(post_title)
+	# Load the client_secrets from a file and have Google show a page with the code to paste in Sublime
+	secrets_file = os.path.join(os.path.dirname(__file__),"client_secrets.json")
+	try:
+		flow = client.flow_from_clientsecrets(secrets_file,
+						scope='https://www.googleapis.com/auth/blogger',
+						redirect_uri='urn:ietf:wg:oauth:2.0:oob')
+	except:
+		sublime.error_message('API Secrets file not found: ' + secrets_file)
+		raise Exception('Blogger Plugin not loaded due to file not found: ' + secrets_file)
+	# Use plaintext storage for testing and move to a more secure method later
+	credential_storage = Storage(os.path.join(os.path.dirname(__file__),"credentials_file"))
+	settings_file = "Blogger.sublime-settings"
+
+	
+	credentials = credential_storage.get()
+	if credentials == None:
+		url = flow.step1_get_authorize_url()
+		webbrowser.open(url,new=2,autoraise=True)
+
+		# input as async so don't try to do anything else after this call
+		sublime.active_window().show_input_panel("Paste code from Google here:", "", save_credentials, None, None)
+	else:
+		blog_url = sublime.load_settings(settings_file).get("blog_url")
+		if blog_url == None:
+			get_blog_url()
+		else:
+			get_blog_info(blog_url)
+	
+
+
+# *****************************************************************************************
+# FORMATTING (custom markdown)
 # *****************************************************************************************
 class BloggerFormatCommand(sublime_plugin.TextCommand):
 	def run(self, edit):
@@ -67,13 +135,14 @@ class BloggerFormatCommand(sublime_plugin.TextCommand):
 				self.view.replace(edit, line, "<br>\n")
 
 # *****************************************************************************************
-# MARKDOWN
+# MARKDOWN (using python-markdown library)
 # *****************************************************************************************
 class BloggerMarkdownCommand(sublime_plugin.TextCommand):
 	def run(self, edit):
 		# Convert markdown code into html
 		newHtml = markdown.markdown(self.view.substr(sublime.Region(0, self.view.size())))
 		self.view.replace(edit, sublime.Region(0, self.view.size()), newHtml)
+
 
 # *****************************************************************************************
 # POST VIA EMAIL
@@ -87,73 +156,24 @@ class BloggerPostEmailCommand(sublime_plugin.TextCommand):
 
 
 # *****************************************************************************************
-# POST VIA API
+# POST VIA API (without formatting first)
+# *****************************************************************************************
+class BloggerPostViaApiNoFormatCommand(sublime_plugin.TextCommand):
+	def run(self, edit):
+		def on_done(post_title):
+			post_contents = self.view.substr(sublime.Region(0, self.view.size()))
+			post(post_title,post_contents)
+
+		sublime.active_window().show_input_panel("Post Title:", "", on_done, None, None)
+
+# *****************************************************************************************
+# POST VIA API (formatting first)
 # *****************************************************************************************
 class BloggerPostViaApiCommand(sublime_plugin.TextCommand):
-	# Load the client_secrets from a file and have Google show a page with the code to paste in Sublime
-	secrets_file = os.path.join(os.path.dirname(__file__),"client_secrets.json")
-	try:
-		flow = client.flow_from_clientsecrets(secrets_file,
-						scope='https://www.googleapis.com/auth/blogger',
-						redirect_uri='urn:ietf:wg:oauth:2.0:oob')
-	except:
-		sublime.error_message('API Secrets file not found: ' + secrets_file)
-		raise Exception('Blogger Plugin not loaded due to file not found: ' + secrets_file)
-	# Use plaintext storage for testing and move to a more secure method later
-	credential_storage = Storage(os.path.join(os.path.dirname(__file__),"credentials_file"))
-	settings_file = "Blogger.sublime-settings"
-
 	def run(self, edit):
-		credentials = self.credential_storage.get()
-		if credentials == None:
-			url = self.flow.step1_get_authorize_url()
-			webbrowser.open(url,new=2,autoraise=True)
-
-			# input as async so don't try to do anything else after this call
-			sublime.active_window().show_input_panel("Paste code from Google here:", "", self.save_credentials, None, None)
-		else:
-			blog_url = sublime.load_settings(self.settings_file).get("blog_url")
-			if blog_url == None:
-				self.get_blog_url()
-			else:
-				self.get_blog_info(blog_url)
-	
-	def save_credentials(self, code):
-		credentials = self.flow.step2_exchange(code)
-		self.credential_storage.put(credentials)
-		blog_url = sublime.load_settings(self.settings_file).get("blog_url")
-		if blog_url == None:
-			self.get_blog_url()
-		else:
-			self.get_blog_info(blog_url)
-
-	def get_blog_url(self):
-		sublime.active_window().show_input_panel("Paste the blog URL here:", "http://", self.save_blog_url, None, None)
-
-	def save_blog_url(self, blog_url):
-		settings = sublime.load_settings(self.settings_file)
-		settings.set("blog_url",blog_url)
-		sublime.save_settings(self.settings_file)
-		self.get_blog_info(blog_url)
-
-	def get_blog_info(self, blog_url):
-		credentials = self.credential_storage.get()
-		http_auth = credentials.authorize(httplib2.Http())
-		from googleapiclient.discovery import build
-		blogger_service = build('blogger','v3',http=http_auth)
-		result = blogger_service.blogs().getByUrl(url=blog_url).execute()
-		blog_id = result['id']
-		self.post_blog_entry(blog_id, blogger_service)
-
-	def post_blog_entry(self, blog_id, blogger_service):
-		# Get the title from the first line
-		post_title_region = self.view.line(0)
-		post_title = self.view.substr(post_title_region)
-		
-		# Run the formatting algorithm and get the page contents
-		self.view.run_command('blogger_format')
-		content = self.view.substr(sublime.Region(post_title_region.end()+10, self.view.size()))
-
-		request = blogger_service.posts().insert(blogId=blog_id,body={"title":post_title,"content":content},isDraft=True)
-		result = request.execute()
-		sublime.status_message("Posted: (" + result['title'] + ") as a draft")
+		def on_done(post_title):
+			self.view.run_command('blogger_format')
+			post_contents = self.view.substr(sublime.Region(0, self.view.size()))
+			post(post_title,post_contents)
+			
+		sublime.active_window().show_input_panel("Post Title:", "", on_done, None, None)
