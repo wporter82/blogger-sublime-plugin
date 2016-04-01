@@ -19,9 +19,6 @@ from __future__ import absolute_import
 import logging
 import datetime
 
-
-LOGGER = logging.getLogger(__name__)
-
 DISCOVERY_DOC_MAX_AGE = 60 * 60 * 24  # 1 day
 
 
@@ -41,5 +38,5 @@ def autodetect():
       from . import file_cache
       return file_cache.cache
     except Exception as e:
-      LOGGER.warning(e, exc_info=True)
+      logging.warning(e, exc_info=True)
       return None

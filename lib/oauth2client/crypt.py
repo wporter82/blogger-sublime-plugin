@@ -24,8 +24,6 @@ from oauth2client._helpers import _json_encode
 from oauth2client._helpers import _to_bytes
 from oauth2client._helpers import _urlsafe_b64decode
 from oauth2client._helpers import _urlsafe_b64encode
-from oauth2client._pure_python_crypt import RsaSigner
-from oauth2client._pure_python_crypt import RsaVerifier
 
 
 CLOCK_SKEW_SECS = 300  # 5 minutes in seconds
@@ -67,11 +65,11 @@ elif PyCryptoSigner:  # pragma: NO COVER
     Signer = PyCryptoSigner
     Verifier = PyCryptoVerifier
 else:  # pragma: NO COVER
-    Signer = RsaSigner
-    Verifier = RsaVerifier
+    raise ImportError('No encryption library found. Please install either '
+                      'PyOpenSSL, or PyCrypto 2.6 or later')
 
 
-def make_signed_jwt(signer, payload, key_id=None):
+def make_signed_jwt(signer, payload):
     """Make a signed JWT.
 
     See http://self-issued.info/docs/draft-jones-json-web-token.html.
@@ -79,18 +77,15 @@ def make_signed_jwt(signer, payload, key_id=None):
     Args:
         signer: crypt.Signer, Cryptographic signer.
         payload: dict, Dictionary of data to convert to JSON and then sign.
-        key_id: string, (Optional) Key ID header.
 
     Returns:
         string, The JWT for the payload.
     """
     header = {'typ': 'JWT', 'alg': 'RS256'}
-    if key_id is not None:
-        header['kid'] = key_id
 
     segments = [
-        _urlsafe_b64encode(_json_encode(header)),
-        _urlsafe_b64encode(_json_encode(payload)),
+      _urlsafe_b64encode(_json_encode(header)),
+      _urlsafe_b64encode(_json_encode(payload)),
     ]
     signing_input = b'.'.join(segments)
 

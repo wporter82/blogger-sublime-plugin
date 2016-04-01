@@ -29,16 +29,12 @@ import os
 import tempfile
 import threading
 
-try:
-  from oauth2client.contrib.locked_file import LockedFile
-except ImportError:
-  # oauth2client < 2.0.0
-  from oauth2client.locked_file import LockedFile
+from oauth2client.locked_file import LockedFile
 
 from . import base
 from ..discovery_cache import DISCOVERY_DOC_MAX_AGE
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 FILENAME = 'google-api-python-client-discovery-doc.cache'
 EPOCH = datetime.datetime.utcfromtimestamp(0)
@@ -88,7 +84,7 @@ class Cache(base.Cache):
         # If we can not obtain the lock, other process or thread must
         # have initialized the file.
       except Exception as e:
-        LOGGER.warning(e, exc_info=True)
+        logging.warning(e, exc_info=True)
       finally:
         f.unlock_and_close()
 
@@ -104,10 +100,10 @@ class Cache(base.Cache):
             return content
         return None
       else:
-        LOGGER.debug('Could not obtain a lock for the cache file.')
+        logger.debug('Could not obtain a lock for the cache file.')
         return None
     except Exception as e:
-      LOGGER.warning(e, exc_info=True)
+      logger.warning(e, exc_info=True)
     finally:
       f.unlock_and_close()
 
@@ -126,9 +122,9 @@ class Cache(base.Cache):
         f.file_handle().seek(0)
         json.dump(cache, f.file_handle())
       else:
-        LOGGER.debug('Could not obtain a lock for the cache file.')
+        logger.debug('Could not obtain a lock for the cache file.')
     except Exception as e:
-      LOGGER.warning(e, exc_info=True)
+      logger.warning(e, exc_info=True)
     finally:
       f.unlock_and_close()
 
