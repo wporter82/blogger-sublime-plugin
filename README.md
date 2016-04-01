@@ -7,12 +7,20 @@ SyntaxHighlighter to make it more visible. A blogpost will be coming soon showin
 
 Dependecies:
 <ul>
-<li><a href="https://github.com/google/oauth2client">oauth2client</a></li>
-<li><a href="https://pypi.python.org/pypi/six">six</a> (just copy six.py into the oauth2client directory)</li>
-<li>google-api-python-client</li>
-<li>httplib2</li>
-<li>uritemplate</li>
-<li>python-markdown ($ git clone git://github.com/waylan/Python-Markdown.git python-markdown)</li>
+	<li>Included:
+		<ul>
+			<li><a href="https://github.com/google/oauth2client">oauth2client</a></li>
+			<li><a href="https://pypi.python.org/pypi/six">six</a></li>
+			<li><a href="https://github.com/google/google-api-python-client">google-api-python-client</a></li>
+			<li><a href="https://github.com/jcgregorio/httplib2">httplib2</a></li>
+			<li><a href="https://github.com/uri-templates/uritemplate-py/">uritemplate</a></li>
+		</ul>
+	</li>
+	<li>Downloaded via Package Control
+		<ul>
+			<li><a href="https://github.com/waylan/Python-Markdown">python-markdown</a></li>
+		</ul>
+	</li>
 </ul>
 <br>
 Formatting:<br>
